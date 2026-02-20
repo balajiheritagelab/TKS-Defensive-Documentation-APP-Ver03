@@ -1,23 +1,30 @@
 let currentStep = 1;
 let record = {};
+let processSteps = [];
 
 function startNew() {
   document.getElementById("home").classList.add("hidden");
-  document.getElementById("form-section").classList.remove("hidden");
   document.getElementById("records-section").classList.add("hidden");
+  document.getElementById("form-section").classList.remove("hidden");
 
   currentStep = 1;
+  processSteps = [];
+
   record = {
     uuid: generateUUID(),
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    craft: {},
+    practitioner: {},
+    materials: [],
+    process_steps: []
   };
 
   renderStep();
 }
 
 function goHome() {
-  document.getElementById("records-section").classList.add("hidden");
   document.getElementById("form-section").classList.add("hidden");
+  document.getElementById("records-section").classList.add("hidden");
   document.getElementById("home").classList.remove("hidden");
 }
 
@@ -34,31 +41,29 @@ function renderRecords() {
     const container = document.getElementById("records-list");
     container.innerHTML = "";
 
-    if (records.length === 0) {
-      container.innerHTML = "<p>No saved records.</p>";
+    if (!records.length) {
+      container.innerHTML = "<p>No records saved.</p>";
       return;
     }
 
     records.forEach(r => {
       const div = document.createElement("div");
-
       div.innerHTML = `
-        <strong>${r.craft_name}</strong><br/>
+        <strong>${r.craft.name}</strong><br/>
         ${r.created_at}<br/>
-        Hash: ${r.record_hash ? r.record_hash.substring(0, 16) + "..." : "Draft"}<br/>
+        Hash: ${r.record_hash.substring(0,16)}...<br/>
         <button onclick='exportRecord(${JSON.stringify(r)})'>Export</button>
         <button onclick="deleteRecord('${r.uuid}')">Delete</button>
         <hr/>
       `;
-
       container.appendChild(div);
     });
   });
 }
 
 function renderStep() {
-  const indicator = document.getElementById("step-indicator");
-  indicator.innerText = `Step ${currentStep} of 4`;
+  document.getElementById("step-indicator").innerText =
+    `Step ${currentStep} of 5`;
 
   const content = document.getElementById("step-content");
 
@@ -68,7 +73,6 @@ function renderStep() {
       <input id="craft_name" placeholder="Craft Name"/>
       <input id="local_name" placeholder="Local Name"/>
       <select id="category">
-        <option value="">Select Category</option>
         <option>Weaving</option>
         <option>Pottery</option>
         <option>Metalwork</option>
@@ -93,36 +97,56 @@ function renderStep() {
   if (currentStep === 3) {
     content.innerHTML = `
       <h2>Materials</h2>
-      <textarea id="materials" placeholder="List materials used"></textarea>
+      <textarea id="materials" placeholder="Comma separated materials"></textarea>
     `;
   }
 
   if (currentStep === 4) {
     content.innerHTML = `
+      <h2>Process Documentation</h2>
+      <textarea id="step_description" placeholder="Describe step"></textarea>
+      <input type="file" accept="image/*" id="step_image"/>
+      <button onclick="addProcessStep()">Add Step</button>
+      <div id="process-list"></div>
+    `;
+    renderProcessList();
+  }
+
+  if (currentStep === 5) {
+    content.innerHTML = `
       <h2>Finalize</h2>
-      <p>Click Next to finalize and generate record hash.</p>
+      <p>Click Next to generate cryptographic hash and save record.</p>
     `;
   }
 }
 
 function nextStep() {
   if (currentStep === 1) {
-    record.craft_name = document.getElementById("craft_name").value;
-    record.local_name = document.getElementById("local_name").value;
-    record.category = document.getElementById("category").value;
+    record.craft = {
+      name: document.getElementById("craft_name").value,
+      local_name: document.getElementById("local_name").value,
+      category: document.getElementById("category").value
+    };
   }
 
   if (currentStep === 2) {
-    record.practitioner = document.getElementById("practitioner").value;
-    record.community = document.getElementById("community").value;
-    record.transmission = document.getElementById("transmission").value;
+    record.practitioner = {
+      name: document.getElementById("practitioner").value,
+      community: document.getElementById("community").value,
+      transmission: document.getElementById("transmission").value
+    };
   }
 
   if (currentStep === 3) {
-    record.materials = document.getElementById("materials").value;
+    record.materials =
+      document.getElementById("materials").value.split(",");
   }
 
   if (currentStep === 4) {
+    record.process_steps = processSteps;
+  }
+
+  if (currentStep === 5) {
     finalizeRecord();
     return;
   }
@@ -136,6 +160,40 @@ function prevStep() {
     currentStep--;
     renderStep();
   }
+}
+
+function addProcessStep() {
+  const desc = document.getElementById("step_description").value;
+  const file = document.getElementById("step_image").files[0];
+
+  if (!desc || !file) return alert("Add description and image.");
+
+  compressImage(file, async (base64) => {
+    const hash = await hashObject(base64);
+
+    processSteps.push({
+      step_no: processSteps.length + 1,
+      description: desc,
+      image: base64,
+      image_hash: hash
+    });
+
+    renderProcessList();
+  });
+}
+
+function renderProcessList() {
+  const container = document.getElementById("process-list");
+  if (!container) return;
+
+  container.innerHTML = processSteps.map(s => `
+    <div>
+      <strong>Step ${s.step_no}</strong>
+      <p>${s.description}</p>
+      <img src="${s.image}" width="100"/>
+      <hr/>
+    </div>
+  `).join("");
 }
 
 async function finalizeRecord() {
@@ -157,7 +215,5 @@ function deleteRecord(uuid) {
   const store = tx.objectStore("records");
   store.delete(uuid);
 
-  tx.oncomplete = function () {
-    renderRecords();
-  };
+  tx.oncomplete = renderRecords;
 }
