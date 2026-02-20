@@ -18,26 +18,30 @@
 
 <main id="app">
 
-  <div id="home">
+  <!-- HOME -->
+  <section id="home-view">
     <button onclick="startNew()">➕ New Documentation</button>
-    <button onclick="viewRecords()">📁 View Saved Records</button>
-  </div>
+    <button onclick="openRecords()">📁 View Records</button>
+  </section>
 
-  <div id="form-section" class="hidden">
+  <!-- WIZARD -->
+  <section id="wizard-view" class="hidden">
     <div id="step-indicator"></div>
     <div id="step-content"></div>
 
     <div class="nav-buttons">
       <button onclick="prevStep()">Back</button>
       <button onclick="nextStep()">Next</button>
+      <button onclick="cancelWizard()">Cancel</button>
     </div>
-  </div>
+  </section>
 
-  <div id="records-section" class="hidden">
+  <!-- RECORDS -->
+  <section id="records-view" class="hidden">
     <h2>Saved Records</h2>
     <div id="records-list"></div>
     <button onclick="goHome()">Back</button>
-  </div>
+  </section>
 
 </main>
 
@@ -45,6 +49,7 @@
 <script src="js/crypto.js"></script>
 <script src="js/media.js"></script>
 <script src="js/export-json.js"></script>
+<script src="js/export-pdf.js"></script>
 <script src="js/app.js"></script>
 
 <script>
