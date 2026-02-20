@@ -1,4 +1,4 @@
-const CACHE_NAME = "tks-cache-v4";
+const CACHE_NAME = "tks-cache-v5";
 
 const urlsToCache = [
   "./",
@@ -8,6 +8,7 @@ const urlsToCache = [
   "./js/db.js",
   "./js/crypto.js",
   "./js/export-json.js",
+  "./js/media.js",
   "./manifest.json"
 ];
 
@@ -17,22 +18,8 @@ self.addEventListener("install", event => {
   );
 });
 
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    )
-  );
-});
-
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(r => r || fetch(event.request))
   );
 });
