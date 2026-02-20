@@ -1,0 +1,9 @@
+{
+  "name": "TKS Documentation",
+  "short_name": "TKS Doc",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#2c3e50",
+  "icons": []
+}
